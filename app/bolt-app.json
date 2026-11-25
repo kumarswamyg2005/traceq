@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "id": "traceq",
+  "title": "Stack trace to search query",
+  "role": "Student developers who paste errors into search engines, forums and chats",
+  "saves": "Cutting frames, folders, line numbers and addresses out of a stack trace before searching or posting it",
+  "summary": "Type =traceq and paste a stack trace. Copy the exception lines, without your folders, line numbers or memory addresses.",
+  "author": {
+    "name": "Kumar Swamy"
+  },
+  "tier": 2,
+  "permissions": [
+    "copies_to_clipboard",
+    "reads_launcher_input"
+  ],
+  "tests": [
+    {
+      "kind": "transform",
+      "name": "python traceback: keeps the exception, drops your folders",
+      "target": "traceq",
+      "input": "Traceback (most recent call last):\n  File \"/Users/demo-student/projects/app/main.py\", line 12, in <module>\n    load(\"/Users/demo-student/projects/data.csv\")\n  File \"/Users/demo-student/projects/app/io.py\", line 4, in load\n    with open(path) as f:\nFileNotFoundError: [Errno 2] No such file or directory: '/Users/demo-student/projects/data.csv'",
+      "expect": "FileNotFoundError: [Errno 2] No such file or directory: 'data.csv'"
+    },
+    {
+      "kind": "transform",
+      "name": "java: chained exceptions, prefixes and frames removed",
+      "target": "traceq",
+      "input": "Exception in thread \"main\" java.lang.RuntimeException: boot failed\n\tat com.acme.App.start(App.java:42)\n\tat com.acme.App.main(App.java:10)\nCaused by: java.sql.SQLException: Access denied for user 'demo'\n\tat com.acme.Db.connect(Db.java:7)\n\t... 2 more",
+      "expect": "java.lang.RuntimeException: boot failed\njava.sql.SQLException: Access denied for user 'demo'"
+    },
+    {
+      "kind": "transform",
+      "name": "node on windows: Uncaught prefix and C:\\Users frames removed",
+      "target": "traceq",
+      "input": "Uncaught TypeError: Cannot read properties of undefined (reading 'map')\n    at renderList (C:\\Users\\demo-student\\shop\\src\\List.js:14:22)\n    at App (C:\\Users\\demo-student\\shop\\src\\App.js:8:3)",
+      "expect": "TypeError: Cannot read properties of undefined (reading 'map')"
+    },
+    {
+      "kind": "transform",
+      "name": "node: a path inside the message keeps only the file name",
+      "target": "traceq",
+      "input": "Error: Cannot find module '/home/demo-student/api/server.js'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1145:15)\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []",
+      "expect": "Error: Cannot find module 'server.js'"
+    },
+    {
+      "kind": "transform",
+      "name": "go panic: frames and goroutine lines removed",
+      "target": "traceq",
+      "input": "panic: runtime error: index out of range [5] with length 3\n\ngoroutine 1 [running]:\nmain.main()\n\t/home/demo-student/go/src/acme/main.go:9 +0x1d\nexit status 2",
+      "expect": "panic: runtime error: index out of range [5] with length 3"
+    },
+    {
+      "kind": "transform",
+      "name": "python: an echoed raise line is not an exception",
+      "target": "traceq",
+      "input": "Traceback (most recent call last):\n  File \"/Users/demo-student/acme/settings.py\", line 9, in <module>\n    raise ConfigError\nConfigError: missing key 'port'",
+      "expect": "ConfigError: missing key 'port'"
+    },
+    {
+      "kind": "transform",
+      "name": "pytest: the E prefix is removed",
+      "target": "traceq",
+      "input": "    def test_lookup():\n>       return users['user_id']\nE       KeyError: 'user_id'\n\n/Users/demo-student/acme/test_app.py:9: KeyError",
+      "expect": "KeyError: 'user_id'\ntest_app.py: KeyError"
+    },
+    {
+      "kind": "transform",
+      "name": "a time inside the message is kept",
+      "target": "traceq",
+      "input": "ValueError: time data '12:30:45' does not match format '%H:%M'",
+      "expect": "ValueError: time data '12:30:45' does not match format '%H:%M'"
+    },
+    {
+      "kind": "transform",
+      "name": "empty input says what to paste",
+      "target": "traceq",
+      "input": "\n   \n",
+      "expect": "No exception line found. Paste a stack trace, for example one ending in ValueError: bad input"
+    },
+    {
+      "kind": "transform",
+      "name": "text with no exception says what to paste",
+      "target": "traceq",
+      "input": "build finished in 3.2s\nall good",
+      "expect": "No exception line found. Paste a stack trace, for example one ending in ValueError: bad input"
+    },
+    {
+      "kind": "transform",
+      "name": "repeats collapse to one, memory address removed",
+      "target": "traceq",
+      "input": "TypeError: <function handler at 0x10a2b3c4d> is not JSON serializable\nTypeError: <function handler at 0x10a2b3c4d> is not JSON serializable\nTypeError: <function handler at 0x10a2b3c4d> is not JSON serializable",
+      "expect": "TypeError: <function handler at > is not JSON serializable"
+    },
+    {
+      "kind": "transform",
+      "name": "unicode text is kept",
+      "target": "traceq",
+      "input": "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe9 in position 3: invalid continuation byte\nValueError: ungültige Eingabe «naïve» 日本語",
+      "expect": "UnicodeDecodeError: 'utf-8' codec can't decode byte in position 3: invalid continuation byte\nValueError: ungültige Eingabe «naïve» 日本語"
+    },
+    {
+      "kind": "transform",
+      "name": "shell characters stay plain text",
+      "target": "traceq",
+      "input": "Error: Command failed: rm -rf build; echo $(whoami) | tee `id` && exit 1",
+      "expect": "Error: Command failed: rm -rf build; echo $(whoami) | tee `id` && exit 1"
+    },
+    {
+      "kind": "transform",
+      "name": "windows line endings",
+      "target": "traceq",
+      "input": "ValueError: bad\r\n  File \"x.py\", line 1\r\n",
+      "expect": "ValueError: bad"
+    },
+    {
+      "kind": "transform",
+      "name": "a line of exactly 160 characters is not cut",
+      "target": "traceq",
+      "input": "ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "expect": "ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "kind": "transform",
+      "name": "a line of 161 characters is cut and says so",
+      "target": "traceq",
+      "input": "KeyError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+      "expect": "KeyError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy [cut]"
+    },
+    {
+      "kind": "transform",
+      "name": "8 exception lines are all kept",
+      "target": "traceq",
+      "input": "ValueError: case 1\nValueError: case 2\nValueError: case 3\nValueError: case 4\nValueError: case 5\nValueError: case 6\nValueError: case 7\nValueError: case 8",
+      "expect": "ValueError: case 1\nValueError: case 2\nValueError: case 3\nValueError: case 4\nValueError: case 5\nValueError: case 6\nValueError: case 7\nValueError: case 8"
+    },
+    {
+      "kind": "transform",
+      "name": "a 9th exception line is cut and says so",
+      "target": "traceq",
+      "input": "ValueError: case 1\nValueError: case 2\nValueError: case 3\nValueError: case 4\nValueError: case 5\nValueError: case 6\nValueError: case 7\nValueError: case 8\nValueError: case 9",
+      "expect": "ValueError: case 1\nValueError: case 2\nValueError: case 3\nValueError: case 4\nValueError: case 5\nValueError: case 6\nValueError: case 7\nValueError: case 8\n[more lines cut]"
+    },
+    {
+      "kind": "transform",
+      "name": "running it on its own output changes nothing",
+      "target": "traceq",
+      "input": "FileNotFoundError: [Errno 2] No such file or directory: 'data.csv'\njava.lang.RuntimeException: boot failed\njava.sql.SQLException: Access denied for user 'demo'",
+      "expect": "FileNotFoundError: [Errno 2] No such file or directory: 'data.csv'\njava.lang.RuntimeException: boot failed\njava.sql.SQLException: Access denied for user 'demo'"
+    }
+  ]
+}

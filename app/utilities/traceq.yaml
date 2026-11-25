@@ -1,0 +1,57 @@
+# traceq: paste a stack trace, get a clean line to search for.
+#
+# Invariants (from the build brief; keep them when editing):
+# 1. id == folder name == chip == "traceq" (lowercase letters, digits, hyphens, max 64).
+# 2. Edit only this file, bolt-app.json and README.md. No generated files exist in a transform app.
+# 3. No secrets in files, packs, rows or errors. Test data is made up (demo-student, ACME).
+# 4. Limits: transform pipe 1 to 32 steps (this one uses 18), regex 512 chars max, no
+#    nested unbounded repeats. Views, tiles, footer buttons, row caps and script timeouts
+#    do not apply: a transform has no views, panes, buttons or script.
+# 5. Pane kinds: none. presentation.widget detail, Bolt's own result row.
+# 6. sample == live: a transform has no API and no fixture mode.
+# 7. This block stays at the top of the file.
+# 8. Packs are made with ./bolt-apps ship or pack, never by hand; raise the version each time.
+schema_version: 1
+runtime: transform
+id: "traceq"
+chip: "traceq"
+title: "Stack trace to search query"
+icon: AlertCircle
+description: Keep the exception lines of a pasted stack trace, without your folders, line numbers or addresses
+emits: Generic
+placeholder_examples:
+  # Bolt shows this as a clickable Try input (=traceq <example>), so it must be a real line
+  - "FileNotFoundError: [Errno 2] No such file or directory: '/Users/demo-student/data.csv'"
+
+presentation:
+  widget: detail
+
+transform:
+  pipe:
+    # Windows line endings
+    - replace: { from: "\\r", to: "", flags: "g" }
+    - lines
+    - trim
+    # drop echoed source lines such as "raise ConfigError" (frames never match the next filter)
+    - filter: { not_matches: "^\\s*(?:raise|throw) " }
+    # keep exception lines: Python, Java, C#, JS/TS, Go panic, Rust panic
+    - filter: { matches: "(?:^|[\\s\"(])[\\w$.]*(?:Error|Exception|Interrupt|Exit)\\b(?::|$)|^\\s*panic: |panicked at " }
+    # runtime and pytest prefixes that add nothing to a search
+    - replace: { from: "^\\s*(?:Uncaught (?:\\(in promise\\) )?|Unhandled exception\\. |Exception in thread \"[^\"]*\" |Caused by: |E {2,})", to: "", flags: "gm" }
+    # folders, which hold your user name: keep only the file name
+    - replace: { from: "(?:[A-Za-z]:)?~?[\\\\/][\\w.@~+-][\\w.@~+\\\\/-]*[\\\\/]", to: "", flags: "g" }
+    # memory addresses
+    - replace: { from: "\\b0x[0-9a-fA-F]+\\b", to: "", flags: "g" }
+    # :line and :line:col after a file name (main.py:12, App.java:42, main.rs:4:5), not times like 12:30
+    - replace: { from: "(?<=\\.[A-Za-z]\\w{0,9}):\\d+(?::\\d+)?\\b", to: "", flags: "g" }
+    # UUIDs
+    - replace: { from: "\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b", to: "", flags: "g" }
+    - replace: { from: "[ \\t]{2,}", to: " ", flags: "g" }
+    - lines
+    - trim
+    - dedupe
+    # long input: cut each line at 160 characters, then keep 8 lines, and say so
+    - replace: { from: "(?<=^[^\\n]{160})[^\\n]+", to: " [cut]", flags: "gm" }
+    - replace: { from: "(?<=^(?:[^\\n]{0,170}\\n){8})[\\s\\S]+", to: "[more lines cut]", flags: "g" }
+    # empty or unrecognized input: say what to paste
+    - replace: { from: "^\\s*$", to: "No exception line found. Paste a stack trace, for example one ending in ValueError: bad input", flags: "g" }

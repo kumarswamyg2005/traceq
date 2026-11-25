@@ -1,0 +1,39 @@
+BOLT FREEZE REPORT
+channel      : native-main-thread
+condition    : stalled 5.0s
+pid          : 38480
+uptime       : 25.2s
+unix ts      : 1795634256
+version      : 0.1.184
+
+── channels ────────────────────────────────────────────
+native-main-thread  : last beat 5.0s ago
+webview             : never beat (disarmed)
+
+── last webview vitals ─────────────────────────────────
+none - the webview has never reported
+
+── breadcrumbs (oldest first) ──────────────────────────
+  -     6.1s  main:geometry-save enter
+  -     6.1s  main:geometry-save exit
+  NOTE: these are only INSTRUMENTED sections, not everything the main
+        thread ran. Newest crumb is 6.1s old; if that predates the
+        stall, the ring does NOT cover it and names nothing.
+
+── process ─────────────────────────────────────────────
+cpu: 0% of one core   rss: 76 MB   footprint: 316 MB   virt: 482682 MB
+system: cpu 63% busy across 8 cores   memory 6635 / 8192 MB used (81%)
+threads: not counted here (macOS lists them in the stacks below)
+watcher tick drift: 0.07s over the last 10s   load: 30.56 13.22 7.13
+interpret: drift near zero => this process WAS scheduled, so a quiet channel
+           means something in the app blocked it. Drift approaching
+           3.0s (the re-arm budget) with high load => the machine was
+           starving us and this report is an artifact, not an app defect.
+           A load of `unknown` means that second test is UNAVAILABLE here:
+           do NOT read it as a quiet machine. Use the `system:` line above
+           instead - near-100% cpu or near-full memory there, with drift,
+           is the starved case; an idle `system:` line with drift is not.
+
+── native stacks ───────────────────────────────────────
+`sample` produced no stacks: timed out after 15000ms and was killed
+(a hardened-runtime build can refuse task_for_pid; this is NOT evidence that nothing was wrong)
